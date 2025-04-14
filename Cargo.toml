@@ -1,0 +1,12 @@
+[package]
+name = "greprs"
+version = "0.1.0"
+authors = ["Ben Weinstein <brweinstein68@gmail.com>"]
+description = "Simple grep clone"
+readme = "README.md"
+
+[dependencies]
+
+[[bin]]
+name = "greprs"
+path = "src/main.rs"
