@@ -1,6 +1,1 @@
-# Grep Clone in Rust
-
-This is incomplete.
-
-TODO:
-   - Make -r not default
+# Grep Clone in Rusts

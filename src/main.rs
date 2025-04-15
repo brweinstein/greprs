@@ -77,8 +77,3 @@ fn main() {
       visit_path(cli.pattern.clone(), path)
    }
 }
-
-//Demo usage
-//greprs lemon ./src/lemon.txt ./src/test.txt
-//Uncomment line 33
-//greprs lemon *
