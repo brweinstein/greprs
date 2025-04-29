@@ -12,7 +12,7 @@ struct Cli {
 
 fn usage_and_exit() {
     eprintln!("Invalid arguments provided.");
-    eprintln!("Usage: greprs [PATTERN] [FILE1] [FILE2] ...");
+    eprintln!("Usage: greprs [PATTERN] [PATH1] [PATH2] ...");
     process::exit(1);
 }
 
@@ -65,9 +65,7 @@ fn main() {
     let paths: Vec<PathBuf> = args.map(PathBuf::from).collect();
     if paths.is_empty() {
         usage_and_exit();
-        return;
     }
-
     // Create an instance of Cli struct
     let cli = Cli { pattern, paths };
 
