@@ -2,12 +2,12 @@
 name = "greprs"
 version = "0.1.0"
 edition = "2024"
-authors = ["Ben Weinstein <brweinstein68@gmail.com>"]
-description = "Simple grep clone"
-readme = "README.md"
+authors = ["Ben Weinstein <brweinstein68@gmail.com"]
+description = "A barebones grep clone in Rust"
+license = "MIT"
+repository = "https://github.com/brweinstein/greprs"
 
 [dependencies]
-
-[[bin]]
-name = "greprs"
-path = "src/main.rs"
+clap = { version = "4.5", features = ["derive"] }
+regex = "1"
+rayon = "1"
