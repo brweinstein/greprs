@@ -7,7 +7,16 @@ A fast grep clone written in Rust with parallel processing and modern features.
 - **Pattern matching**: Basic regex, fixed strings, word/line boundaries
 - **Search options**: Case-insensitive, recursive directories, inverted matching  
 - **Output controls**: Line numbers, match counts, filename display
-- **Performance**: Parallel file processing for speed
+- **Performance**: Memory-mapped files, parallel processing, optimized output
+
+## Performance Optimizations
+
+- **Memory mapping** for large files (>1MB) to avoid loading into RAM
+- **Buffered output** to reduce syscall overhead
+- **Early exit optimizations** for simple cases (quiet, count, file listing)
+- **Parallel directory traversal** for large directory trees
+- **Pre-allocated buffers** and reduced string allocations
+- **Fast binary file detection** using file extensions
 
 ## Quick Start
 
@@ -21,7 +30,7 @@ greprs -in "TODO" ./src
 # Count matches in all Rust files
 greprs -c "panic!" ./src
 
-# Find files containing "deprecated"
+# Find files containing "deprecated"  
 greprs -l "deprecated" ./
 ```
 
@@ -30,7 +39,13 @@ greprs -l "deprecated" ./
 ```bash
 git clone https://github.com/brweinstein/greprs.git
 cd greprs
+cargo build --release
 cargo install --path .
+```
+
+After installing, make sure `~/.cargo/bin` is in your `PATH`:
+```bash
+export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
 ## Usage
@@ -39,40 +54,80 @@ cargo install --path .
 greprs [OPTIONS] <pattern> <files...>
 ```
 
-**Common options:**
-- `-i` - ignore case
-- `-r` - search directories recursively  
-- `-n` - show line numbers
-- `-c` - count matches only
-- `-l` - list files with matches
-- `-v` - invert match (show non-matching lines)
-- `-F` - treat pattern as literal string
+## All Options
+
+| Short | Long                    | Description                                      |
+|-------|------------------------|--------------------------------------------------|
+| `-i`  | `--ignore-case`        | Ignore case distinctions                         |
+| `-r`  | `--recursive`          | Recursively search directories                   |
+| `-R`  | `--dereference-recursive` | Follow symbolic links                         |
+| `-n`  | `--line-number`        | Show line numbers for matches                    |
+| `-c`  | `--count`              | Print only a count of matching lines per file   |
+| `-l`  | `--files-with-matches` | List only files containing matches               |
+| `-L`  | `--files-without-match`| List only files without matches                 |
+| `-v`  | `--invert-match`       | Show non-matching lines                          |
+| `-F`  | `--fixed-strings`      | Treat pattern as a literal string                |
+| `-w`  | `--word-regexp`        | Match only whole words                           |
+| `-x`  | `--line-regexp`        | Match only whole lines                           |
+| `-o`  | `--only-matching`      | Print only the matched parts of lines           |
+| `-q`  | `--quiet`              | Suppress normal output; exit with 0 if match    |
+| `-s`  | `--no-messages`        | Suppress error messages                          |
+| `-h`  | `--no-filename`        | Suppress the prefixing of file names             |
+|       | `--with-filename`      | Always print file name for matches              |
+| `-A`  | `--after-context=NUM`  | Show NUM lines after each match                  |
+| `-B`  | `--before-context=NUM` | Show NUM lines before each match                 |
+| `-C`  | `--context=NUM`        | Show NUM lines before and after each match      |
+| `-m`  | `--max-count=NUM`      | Stop after NUM matches                           |
+| `-b`  | `--byte-offset`        | Print byte offset of each match                  |
+| `-a`  | `--text`               | Process binary files as text                     |
+| `-I`  | `--ignore-binary`      | Skip binary files                                |
+| `-z`  | `--null`               | Use null character as line separator             |
+|       | `--null-data`          | Use null character as record separator          |
+| `-f`  | `--file=FILE`          | Read patterns from FILE                          |
+|       | `--exclude=GLOB`       | Skip files matching GLOB pattern                |
+|       | `--include=GLOB`       | Search only files matching GLOB pattern         |
+|       | `--color[=WHEN]`       | Use colored output (auto/always/never)          |
+|       | `--help`               | Show help message                                |
+| `-V`  | `--version`            | Show version information                         |
+
+**Examples:**
+```bash
+greprs -ir "error" ./logs
+greprs -c "TODO" ./src
+greprs -l "panic!" ./src
+greprs -v "deprecated" ./
+greprs -w "main" ./src
+greprs -x "fn main()" ./src
+```
+
+For more details, run:
+```bash
+greprs --help
+```
 
 ## Performance
 
-Currently ~38% slower than GNU grep on small workloads, but actively being optimized.
+Now optimized to be competitive with GNU grep on most workloads.
 
-**Benchmark (25 files, 25K lines):**
-```
-Tool     Time (ms)    Memory (MB)    Matches
-grep         5.3           0.5          258  
-greprs       7.3           0.8          258
-```
+### From Small Benchmark
+![Benchmark](benchmark.png)
 
-Run your own benchmarks:
+Run your own benchmarks (small, medium, large):
 ```bash
-./benchmark/compare.py --greprs-bin target/release/greprs --workload small
+./benchmark/compare.py --greprs-bin target/release/greprs --workload medium
 ```
 
 ## Development
 
 ```bash
-# Build and test
+# Build optimized version
 cargo build --release
+
+# Run tests
 cargo test
 
 # Run locally  
-cargo run -- "pattern" ./files
+cargo run --release -- "pattern" ./files
 ```
 
 ---
