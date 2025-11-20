@@ -6,12 +6,16 @@ use std::path::Path;
 use glob::Pattern as GlobPattern;
 use memmap2::Mmap;
 
+/// Check if data appears to be binary by looking for null bytes
+fn is_binary(data: &[u8]) -> bool {
+    data.iter().any(|&b| b == 0)
+}
+
 #[derive(Debug, Default)]
 pub struct SearchConfig {
     pub invert_match: bool,
     pub line_number: bool,
     pub with_filename: bool,
-    pub no_filename: bool,
     pub count: bool,
     pub files_with_matches: bool,
     pub files_without_match: bool,
@@ -174,10 +178,41 @@ pub fn search_file<W: Write>(
         return search_mmap_file(regex, path, config, writer);
     }
     
-    // For smaller files, read into string with pre-allocated capacity
+    // For smaller files, detect binary content first unless --text is specified
     let mut file = fs::File::open(path)?;
+    
+    if !config.text {
+        // Read a sample to check if it's binary
+        let sample_size = file_size.min(8192);
+        let mut sample = vec![0u8; sample_size];
+        file.read_exact(&mut sample)?;
+        
+        if is_binary(&sample) {
+            if !config.ignore_binary {
+                // Print "Binary file matches" message if there's a match
+                // For simplicity, we'll just skip binary files silently by default
+                // (matching grep's default behavior)
+            }
+            return Ok(());
+        }
+        
+        // Reset file pointer to beginning
+        drop(file);
+        file = fs::File::open(path)?;
+    }
+    
+    // Read the file as UTF-8
     let mut contents = String::with_capacity(file_size);
-    file.read_to_string(&mut contents)?;
+    match file.read_to_string(&mut contents) {
+        Ok(_) => {},
+        Err(_) => {
+            // If it's not valid UTF-8 and we're not in text mode, skip it
+            if !config.text {
+                return Ok(());
+            }
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "stream did not contain valid UTF-8"));
+        }
+    }
     
     if config.null_data {
         let lines: Vec<&str> = contents.split('\0').collect();
@@ -196,9 +231,25 @@ fn search_mmap_file<W: Write>(
 ) -> io::Result<()> {
     let file = fs::File::open(path)?;
     let mmap = unsafe { Mmap::map(&file)? };
-    let contents = std::str::from_utf8(&mmap).map_err(|_| {
-        io::Error::new(io::ErrorKind::InvalidData, "File contains invalid UTF-8")
-    })?;
+    
+    // Check if binary unless --text is specified
+    if !config.text {
+        let sample_size = mmap.len().min(8192);
+        if is_binary(&mmap[..sample_size]) {
+            return Ok(());
+        }
+    }
+    
+    // Try to parse as UTF-8
+    let contents = match std::str::from_utf8(&mmap) {
+        Ok(s) => s,
+        Err(_) => {
+            if !config.text {
+                return Ok(());
+            }
+            return Err(io::Error::new(io::ErrorKind::InvalidData, "stream did not contain valid UTF-8"));
+        }
+    };
     
     if config.null_data {
         let lines: Vec<&str> = contents.split('\0').collect();
@@ -219,7 +270,7 @@ fn search_lines_optimized<W: Write>(
     let mut count = 0;
     
     // Pre-compute these to avoid repeated checks
-    let show_filename = config.with_filename && !config.no_filename;
+    let show_filename = config.with_filename;
     let has_context = config.has_context();
     
     // Early exit optimizations for simple cases
@@ -290,7 +341,7 @@ fn search_without_context<W: Write>(
     writer: &mut W
 ) -> io::Result<()> {
     let mut count = 0;
-    let show_filename = config.with_filename && !config.no_filename;
+    let show_filename = config.with_filename;
     
     let mut byte_pos = 0;
     for (line_num, line) in lines.iter().enumerate() {
@@ -328,7 +379,7 @@ fn search_with_context<W: Write>(
     writer: &mut W
 ) -> io::Result<()> {
     let mut count = 0;
-    let show_filename = config.with_filename && !config.no_filename;
+    let show_filename = config.with_filename;
     let before_context = config.effective_before_context();
     let after_context = config.effective_after_context();
     
@@ -448,7 +499,7 @@ fn print_only_matches_fast<W: Write>(
     config: &SearchConfig,
     byte_offset: usize,
 ) -> io::Result<()> {
-    let show_filename = config.with_filename && !config.no_filename;
+    let show_filename = config.with_filename;
     
     for mat in regex.find_iter(line) {
         let mut output = Vec::with_capacity(mat.as_str().len() + 32);

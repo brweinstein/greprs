@@ -5,7 +5,11 @@ use std::path::PathBuf;
 #[command(name = "greprs")]
 #[command(about = "A fast grep clone written in Rust")]
 #[command(version)]
+#[command(disable_help_flag = true)]
 pub struct CliArgs {
+    /// Print help information
+    #[arg(long = "help", action = clap::ArgAction::Help)]
+    pub help: Option<bool>,
     /// Pattern to search for
     pub pattern: String,
 
@@ -53,7 +57,7 @@ pub struct CliArgs {
     pub no_filename: bool,
 
     /// Always print file names for matches
-    #[arg(long = "with-filename")]
+    #[arg(short = 'H', long = "with-filename")]
     pub with_filename: bool,
 
     /// Read directories recursively
@@ -85,7 +89,7 @@ pub struct CliArgs {
     pub context: Option<usize>,
 
     /// Use colored output (auto/always/never)
-    #[arg(long = "color", value_enum, default_value = "auto")]
+    #[arg(long = "color", value_enum, default_value = "never")]
     pub color: ColorOption,
 
     /// Skip files whose base name matches GLOB
@@ -119,10 +123,6 @@ pub struct CliArgs {
     /// Suppress error messages about nonexistent or unreadable files
     #[arg(short = 's', long = "no-messages")]
     pub no_messages: bool,
-
-    /// Print version information and exit
-    #[arg(short = 'V', long = "version")]
-    pub version: bool,
 
     /// Use null character as record separator
     #[arg(long = "null-data")]

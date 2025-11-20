@@ -73,7 +73,7 @@ greprs [OPTIONS] <pattern> <files...>
 | `-q`  | `--quiet`              | Suppress normal output; exit with 0 if match    |
 | `-s`  | `--no-messages`        | Suppress error messages                          |
 | `-h`  | `--no-filename`        | Suppress the prefixing of file names             |
-|       | `--with-filename`      | Always print file name for matches              |
+| `-H`  | `--with-filename`      | Always print file name for matches              |
 | `-A`  | `--after-context=NUM`  | Show NUM lines after each match                  |
 | `-B`  | `--before-context=NUM` | Show NUM lines before each match                 |
 | `-C`  | `--context=NUM`        | Show NUM lines before and after each match      |

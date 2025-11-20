@@ -11,11 +11,6 @@ mod utils;
 fn main() -> io::Result<()> {
     let args = CliArgs::parse();
     
-    if args.version {
-        println!("greprs {}", env!("CARGO_PKG_VERSION"));
-        return Ok(());
-    }
-    
     // Handle context options
     let (before_context, after_context) = match args.context {
         Some(n) => (Some(n), Some(n)),
@@ -48,11 +43,20 @@ fn main() -> io::Result<()> {
     let regex = build_regex(&args.pattern, &regex_config)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
     
+    // Auto-detect if we should show filenames (like grep does)
+    // Show filenames if: multiple files OR --with-filename OR (not --no-filename AND multiple files)
+    let should_show_filename = if args.no_filename {
+        false
+    } else if args.with_filename {
+        true
+    } else {
+        args.files.len() > 1
+    };
+    
     let config = SearchConfig {
         invert_match: args.invert_match,
         line_number: args.line_number,
-        with_filename: args.with_filename,
-        no_filename: args.no_filename,
+        with_filename: should_show_filename,
         count: args.count,
         files_with_matches: args.files_with_matches,
         files_without_match: args.files_without_match,
